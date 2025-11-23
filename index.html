@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Parser Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://i.ibb.co/vCggYhpY/background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ff6b35;
+        }
+        
+        .description {
+            font-size: 16px;
+            line-height: 1.5;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #ff6b35, #ff8e53);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .button-secondary {
+            background: linear-gradient(45deg, #4a4a4a, #6a6a6a);
+        }
+        
+        .filters-container {
+            display: none;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        
+        .filter-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .filter-item:hover {
+            background: rgba(255, 107, 53, 0.3);
+        }
+        
+        .filter-item.selected {
+            background: rgba(255, 107, 53, 0.5);
+            border-color: #ff6b35;
+        }
+        
+        .gift-name {
+            font-size: 12px;
+            margin-top: 5px;
+            word-break: break-word;
+        }
+        
+        .selected-filters {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        
+        .selected-title {
+            font-size: 14px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+        
+        .selected-list {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .parsing-info {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 107, 53, 0.2);
+            border-radius: 10px;
+        }
+        
+        .progress-bar {
+            margin: 10px 0;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b35, #ff8e53);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">🎁 NFT Gift Parser</div>
+            <div class="description">
+                Вообщем я еле как сделал эту дичь мб будет полезной
+            </div>
+            
+            <button class="button" onclick="showFilters()">🔍 Фильтр подарков</button>
+            <button class="button" onclick="startParsing()">🚀 Начать парсинг</button>
+            <button class="button button-secondary" onclick="showStats()">📊 Статистика</button>
+        </div>
+        
+        <div id="filtersContainer" class="filters-container">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <h3>Выберите подарки для фильтрации</h3>
+            </div>
+            
+            <div class="selected-filters">
+                <div class="selected-title">Выбранные подарки:</div>
+                <div id="selectedList" class="selected-list">Не выбрано</div>
+            </div>
+            
+            <div class="filter-grid" id="filterGrid">
+                <!-- Фильтры будут загружены через JavaScript -->
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="button" onclick="applyFilters()">✅ Применить фильтры</button>
+                <button class="back-button" onclick="hideFilters()">🔙 Назад</button>
+            </div>
+        </div>
+        
+        <div id="statsContainer" class="filters-container">
+            <div class="stats">
+                <h3>📊 Статистика парсинга</h3>
+                <div class="stat-item">🎯 Всего подарков: <span id="totalGifts">0</span></div>
+                <div class="stat-item">🔧 Доступно для поиска: <span id="availableGifts">0</span></div>
+                <div class="stat-item">⚡️ Скорость поиска: <span id="searchSpeed">50 потоков</span></div>
+                <div class="stat-item">👥 Цель: <span id="targetUsers">15 пользователей</span></div>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="back-button" onclick="hideStats()">🔙 Назад</button>
+            </div>
+        </div>
+        
+        <div id="parsingInfo" class="parsing-info">
+            <div id="parsingText">🔄 Парсинг запущен...</div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressText">0%</div>
+        </div>
+    </div>
+
+    <script>
+        const gifts = [
+            "Santa Hat", "Signet Ring", "Precious Peach", "Plush Pepe", "Spiced Wine", "Jelly Bunny",
+            "Perfume Bottle", "Eternal Rose", "Berry Box", "Vintage Cigar", "Magic Potion", "Kissed Frog",
+            "Hex Pot", "Evil Eye", "Sharp Tongue", "Trapped Heart", "Skull Flower", "Scared Cat",
+            "Spy Agaric", "Homemade Cake", "Genie Lamp", "Lunar Snake", "Party Sparkler", "Jester Hat",
+            "Witch Hat", "Hanging Star", "Love Candle", "Cookie Heart", "Desk Calendar", "Jingle Bells",
+            "Snow Mittens", "Voodoo Doll", "Mad Pumpkin", "Hypno Lollipop", "Bunny Muffin", "Astral Shard",
+            "Flying Broom", "Crystal Ball", "Eternal Candle", "Swiss Watch", "Ginger Cookie", "Mini Oscar",
+            "Lol Pop", "Ion Gem", "Star Notepad", "Loot Bag", "Love Potion", "Toy Bear",
+            "Diamond Ring", "Sakura Flower", "Sleigh Bell", "Top Hat", "Record Player", "Snow Globe",
+            "Electric Skull", "Tama Gadget", "Candy Cane", "Neko Helmet", "Easter Egg", "Bonded Ring",
+            "Pet Snake", "Snake Box", "Xmas Stocking", "Big Year", "Holiday Drink", "Gem Signet",
+            "Light Sword", "Restless Jar", "Nail Bracelet", "Heroic Helmet", "Bow Tie", "Heart Locket",
+            "Whip Cupcake", "Joyful Bundle", "Cupid Charm", "Valentine Box", "Snoop Dogg", "Swag Bag",
+            "Snoop Cigar", "Low Rider", "Westside Sign", "StellarRocket", "JollyChimp", "lonicDryer", "InputKey",
+            "Fresh Socks", "Sky Stilettos", "Faith Amulet", "Happy Brownie",
+            "Ice Cream", "Instant Ramen", "Mousse Cake", "Spring Basket"
+        ];
+
+        let selectedGifts = new Set();
+        
+        // Загрузка списка подарков при старте
+        window.onload = function() {
+            loadGifts();
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+            }
+        };
+        
+        function loadGifts() {
+            const grid = document.getElementById('filterGrid');
+            grid.innerHTML = '';
+            
+            gifts.forEach(gift => {
+                const isSelected = selectedGifts.has(gift);
+                const item = document.createElement('div');
+                item.className = `filter-item ${isSelected ? 'selected' : ''}`;
+                item.innerHTML = `
+                    <div>🎁</div>
+                    <div class="gift-name">${gift}</div>
+                `;
+                item.onclick = () => toggleGift(gift);
+                grid.appendChild(item);
+            });
+            
+            updateSelectedList();
+        }
+        
+        function toggleGift(gift) {
+            if (selectedGifts.has(gift)) {
+                selectedGifts.delete(gift);
+            } else {
+                selectedGifts.add(gift);
+            }
+            loadGifts();
+        }
+        
+        function updateSelectedList() {
+            const selectedList = document.getElementById('selectedList');
+            if (selectedGifts.size === 0) {
+                selectedList.textContent = 'Не выбрано';
+            } else {
+                selectedList.textContent = Array.from(selectedGifts).join(', ');
+            }
+        }
+        
+        function showFilters() {
+            document.getElementById('filtersContainer').style.display = 'block';
+            document.getElementById('statsContainer').style.display = 'none';
+            document.getElementById('parsingInfo').style.display = 'none';
+        }
+        
+        function hideFilters() {
+            document.getElementById('filtersContainer').style.display = 'none';
+        }
+        
+        function showStats() {
+            document.getElementById('statsContainer').style.display = 'block';
+            document.getElementById('filtersContainer').style.display = 'none';
+            document.getElementById('parsingInfo').style.display = 'none';
+            
+            // Обновляем статистику
+            document.getElementById('totalGifts').textContent = gifts.length;
+            document.getElementById('availableGifts').textContent = gifts.length;
+        }
+        
+        function hideStats() {
+            document.getElementById('statsContainer').style.display = 'none';
+        }
+        
+        function applyFilters() {
+            hideFilters();
+        }
+        
+        function startParsing() {
+            const selected = Array.from(selectedGifts);
+            
+            // Показываем информацию о парсинге
+            const parsingInfo = document.getElementById('parsingInfo');
+            const parsingText = document.getElementById('parsingText');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            parsingInfo.style.display = 'block';
+            document.getElementById('filtersContainer').style.display = 'none';
+            document.getElementById('statsContainer').style.display = 'none';
+            
+            if (selected.length === 0) {
+                parsingText.textContent = '🎯 Запускаю парсинг всех подарков...';
+            } else {
+                parsingText.textContent = `🎯 Запускаю парсинг с фильтрами: ${selected.join(', ')}`;
+            }
+            
+            // Имитация прогресса
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    parsingText.textContent = '✅ Парсинг завершен! Результаты отправлены в бота.';
+                    
+                    // Отправляем данные в бота
+                    sendResultsToBot();
+                }
+                
+                progressFill.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+            }, 500);
+        }
+        
+        function sendResultsToBot() {
+            // Отправка данных обратно в бота через Telegram Web App
+            const selectedGiftsArray = Array.from(selectedGifts);
+            const data = {
+                action: 'start_parsing',
+                filters: selectedGiftsArray,
+                source: 'webapp'
+            };
+            
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify(data));
+                
+                // Закрываем мини-приложение через 2 секунды
+                setTimeout(() => {
+                    Telegram.WebApp.close();
+                }, 2000);
+            } else {
+                // Для тестирования вне Telegram
+                alert('🎉 Парсинг завершен! Фильтры: ' + (selectedGiftsArray.length > 0 ? selectedGiftsArray.join(', ') : 'все подарки'));
+            }
+        }
+    </script>
+</body>
+</html>
